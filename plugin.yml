@@ -5,5 +5,7 @@ main: mcpepc\killtosteal\KillToSteal
 api:
 - 3.0.0
 description: Wanna steal their items? Then kill them!
+depend:
+- PlayerDeathMotion
 author: MCPE_PC
 ...

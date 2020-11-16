@@ -42,12 +42,17 @@ class KillToSteal extends PluginBase implements Listener {
 		}
 	}
 
+	/**
+		* @priority LOW
+	 */
 	function onDamageByEntity(EntityDamageByEntityEvent $event): void {
 		$entity = $event->getEntity();
 		$eid = $entity->getId();
+		$damager = $event->getDamager();
 
-		if (isset($this->clickIds[$eid]) && isset($this->handlers[$this->clickIds[$eid]]) && $entity instanceof Human) {
-			$this->handlers[$this->clickIds[$eid]]->showInventoryTo($event->getDamager());
+		if (isset($this->clickIds[$eid]) && $damager instanceof Player && isset($this->handlers[$this->clickIds[$eid]]) && $entity instanceof Human) {
+			$event->setCancelled();
+			$this->handlers[$this->clickIds[$eid]]->showInventoryTo($damager);
 		}
 	}
 
@@ -57,7 +62,7 @@ class KillToSteal extends PluginBase implements Listener {
 	 */
 	function onDeath(PlayerDeathEvent $event): void {
 		$player = $event->getPlayer();
-		$this->clickIds[Entity::$entityCount + 1] = strtolower($player->getName());
+		$this->clickIds[Entity::$entityCount] = strtolower($player->getName());
 
 		$deathCause = $player->getLastDamageCause();
 		$lastDamager = null;
