@@ -1,6 +1,6 @@
 <?php
 
-namespace mcpepc\pocketmusic;
+namespace mcpepc\killtosteal;
 
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;

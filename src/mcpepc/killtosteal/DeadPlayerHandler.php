@@ -1,6 +1,6 @@
 <?php
 
-namespace mcpepc\pocketmusic;
+namespace mcpepc\killtosteal;
 
 use pocketmine\item\ItemFactory;
 use pocketmine\Player;

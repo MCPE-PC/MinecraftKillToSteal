@@ -1,5 +1,5 @@
 ---
-name: PocketMusic
+name: KillToSteal
 version: 1.0.0
 main: mcpepc\killtosteal\KillToSteal
 api:
