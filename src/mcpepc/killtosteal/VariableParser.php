@@ -97,7 +97,7 @@ class VariableParser {
 			'boots' => [$armorInventory->getBoots()],
 			'storage' => self::sliceNumericKeyAssociatedArray($contents, $hotbarSize, $inventory->getSize()),
 			'hotbar' => self::sliceNumericKeyAssociatedArray($contents, 0, $hotbarSize - 1),
-			'holding' => $inventory->getItemInHand()
+			'holding' => [$inventory->getItemInHand()]
 		];
 
 		foreach ($this->variables as $name => $syntax) {
