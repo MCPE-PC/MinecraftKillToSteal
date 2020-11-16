@@ -2,21 +2,32 @@
 
 namespace mcpepc\killtosteal;
 
+use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
 use pocketmine\Player;
 
 class DeadPlayerHandler {
+	/** @var string */
 	protected $owner;
+
+	/** @var string|null */
 	protected $killer;
 
+	/** @var StealInventory */
 	protected $inventory;
 
+	/** @var Item[] */
 	protected $retrievable = [];
+
 	protected $gaveBack = false;
 
 	function __construct(KillToSteal $plugin, Player $player, ?Player $lastDamager) {
 		$this->owner = strtolower($player->getName());
-		$this->killer = strtolower($lastDamager->getName());
+
+		if ($lastDamager !== null) {
+			$this->killer = strtolower($lastDamager->getName());
+		}
+
 		$this->inventory = new StealInventory();
 
 		$variables = $plugin->getVariableParser()->applyToPlayer($player);

@@ -15,9 +15,16 @@ use function count;
 use function usort;
 
 class KillToSteal extends PluginBase implements Listener {
+	/** @var string[] */
 	private $clickIds = [];
+
+	/** @var DeadPlayerHandler[] */
 	private $handlers = [];
+
+	/** @var Config */
 	private $inventoryConfig;
+
+	/** @var VariableParser */
 	private $variableParser;
 
 	function onLoad(): void {

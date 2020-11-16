@@ -135,7 +135,8 @@ class VariableParser {
 				}
 			}
 
-			$result[$name] = array_slice(shuffle($variable), 0, $this->lengthLimits[$name] ?? null);
+			shuffle($variable);
+			$result[$name] = array_slice($variable, 0, $this->lengthLimits[$name] ?? null);
 		}
 
 		array_walk($result, function (array $items) {
