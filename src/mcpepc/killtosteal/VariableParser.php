@@ -140,7 +140,10 @@ class VariableParser {
 		}
 
 		array_walk($result, function (array $items) {
-			return shuffle(self::itemSetMapToItems(self::itemsToItemSetMap($items)));
+			$items = self::itemSetMapToItems(self::itemsToItemSetMap($items));
+			shuffle($items);
+
+			return $items;
 		});
 
 		return $result;
