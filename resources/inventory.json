@@ -1,0 +1,25 @@
+{
+  "variables": {
+    "0": "helmet",
+    "1": "chestplate",
+    "2": "leggings",
+    "3": "boots",
+    "b": ":item:1",
+    "d": ":item:26",
+    "h": "hotbar -B -S",
+    "o": "offhand",
+    "s": "storage",
+    "B": "any whitelist:261",
+    "I": "storage +hotbar -h -B -S",
+    "S": "any whitelist:268,272,267,276,283,743"
+  },
+  "stealable": ["h", "B", "I", "S"],
+  "inventory": [
+    "I", "I", "I", "I", "I", "I", "I", "I", "I",
+    "d", "d", "d", "d", "d", "d", "d", "d", "d",
+    "b", "b", "0", "b", "b", "b", "b", "b", "b",
+    "b", "S", "1", "B", "b", "h", "h", "b", "b",
+    "b", "b", "2", "b", "b", "h", "h", "b", "b",
+    "b", "b", "3", "b", "b", "b", "b", "b", "b"
+  ]
+}

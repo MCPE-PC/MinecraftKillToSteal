@@ -1,0 +1,9 @@
+---
+name: PocketMusic
+version: 1.0.0
+main: mcpepc\killtosteal\KillToSteal
+api:
+- 3.0.0
+description: Wanna steal their items? Then kill them!
+author: MCPE_PC
+...

@@ -1,0 +1,23 @@
+---
+empty-slot-item:
+  id: 1
+  meta: 0
+  count: 1
+item-list:
+  always-on-top-priority: []
+  whitelist: false # Blacklist will be ignored if you use whitelist.
+  blacklist: []
+on-death:
+  ban: # TODO
+    enable: true
+    index: 1
+    ban: true
+    ip-ban: false
+    reason: Death is illegal in this server
+    time: -1 # It is the time of the ban represented in seconds. It won't automatically pardon the player if you set as non-numeric values or a negative number.
+  transfer:
+    enable: true
+    index: 0
+    ip: 127.0.0.1
+    port: 19132
+...
