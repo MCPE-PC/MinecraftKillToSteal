@@ -4,6 +4,7 @@ namespace mcpepc\killtosteal;
 
 use pocketmine\inventory\PlayerInventory;
 use pocketmine\item\ItemFactory;
+use pocketmine\Player;
 use function array_filter;
 use function array_merge;
 use function array_search;
@@ -19,7 +20,7 @@ use function shuffle;
 use function strpos;
 use function substr;
 
-class VariableManager {
+class VariableParser {
 	const RESERVED_NAMES = ['any', 'offhand', 'armor', 'helmet', 'chestplate', 'leggings', 'boots', 'storage', 'hotbar', 'holding'];
 
 	const MAGIC_NAME_REGEX = '/^:(item:-?[0-9]+(:[0-9]+)?|random)$/';
@@ -194,6 +195,8 @@ class VariableManager {
 				$map[] = [$item, $item->count];
 			}
 		}
+
+		return $map;
 	}
 
 	static function itemSetMapToItems(array $map): array {
@@ -216,10 +219,12 @@ class VariableManager {
 				$items[] = $item;
 			}
 		}
+
+		return $items;
 	}
 
 	static function parseMagicVariable(string $magic, array $anyContents): array {
-		$magic = explode(':', $variableName);
+		$magic = explode(':', $magic);
 
 		if ($magic[1] === 'random') {
 			return [$anyContents[mt_rand(0, count($anyContents) - 1)]];
@@ -228,6 +233,8 @@ class VariableManager {
 		if ($magic[1] === 'item') {
 			return [ItemFactory::get((int) $magic[2], (int) ($magic[3] ?? 0))];
 		}
+
+		return [];
 	}
 
 	static function sliceNumericKeyAssociatedArray(array $array, int $ge, int $le): array {

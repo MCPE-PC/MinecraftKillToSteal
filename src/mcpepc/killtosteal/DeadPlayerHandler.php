@@ -32,7 +32,7 @@ class DeadPlayerHandler {
 		for ($i = 0; $i < count($stolen); $i++) {
 			for ($j = 0; $j < count($retrievable); $j++) {
 				if ($stolen[$i][0]->equals($retrievable[$j][0])) {
-					$retrievable[$f][1] -= $stolen[$s][1];
+					$retrievable[$j][1] -= $stolen[$i][1];
 				}
 			}
 		}
