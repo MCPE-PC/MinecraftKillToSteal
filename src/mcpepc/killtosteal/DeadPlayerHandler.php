@@ -54,9 +54,16 @@ class DeadPlayerHandler {
 		$slotEmpty = ItemFactory::get($slotEmpty['id'], $slotEmpty['meta'], $slotEmpty['count']);
 
 		foreach ($plugin->getInventoryConfig()->get('inventory') as $index => $name) {
-			$this->inventory->setItem($index, count($variables[$name]) ? array_shift($variables[$name]) : $slotEmpty);
+			$item = $slotEmpty;
+
+			if (isset($variables[$name]) && count($variables[$name])) {
+				$item = array_shift($variables[$name]);
+			} else if (preg_match(VariableParser::MAGIC_NAME_REGEX, $name)) {
+				$item = VariableParser::parseMagicVariable($name, [])[0];
+			}
+
+			$this->inventory->setItem($index, $item, false);
 		}
-		// 만들던 거를 수정하시면 구조 변경에 한계가 발생하게 됩니다
 	}
 
 	function showInventoryTo(Player $player): int {

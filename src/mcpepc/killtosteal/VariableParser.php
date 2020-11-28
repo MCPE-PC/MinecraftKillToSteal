@@ -2,6 +2,7 @@
 
 namespace mcpepc\killtosteal;
 
+use pocketmine\inventory\ArmorInventory;
 use pocketmine\inventory\PlayerInventory;
 use pocketmine\item\ItemFactory;
 use pocketmine\Player;
@@ -43,7 +44,7 @@ class VariableParser {
 		$referees = [];
 
 		foreach ($variables as $name => $syntax) {
-			if (is_string($name) && is_string($syntax) && !in_array($name, self::RESERVED_NAMES, true) && preg_match(self::NAME_REGEX, $name) && self::checkSyntax($syntax)) {
+			if (is_string($name) && is_string($syntax) && !self::isIntegerString($name) && !in_array($name, self::RESERVED_NAMES, true) && preg_match(self::NAME_REGEX, $name) && self::checkSyntax($syntax)) {
 				$definedNames[] = $name;
 				$definedVariables[$name] = $syntax;
 			} else {
@@ -91,14 +92,30 @@ class VariableParser {
 			'any' => array_merge($contents, $armorContents, $offhandContents),
 			'offhand' => $offhandContents,
 			'armor' => array_merge($armorContents, $offhandContents),
-			'helmet' => [$armorInventory->getHelmet()],
-			'chestplate' => [$armorInventory->getChestplate()],
-			'leggings' => [$armorInventory->getLeggings()],
-			'boots' => [$armorInventory->getBoots()],
+			'helmet' => [],
+			'chestplate' => [],
+			'leggings' => [],
+			'boots' => [],
 			'storage' => self::sliceNumericKeyAssociatedArray($contents, $hotbarSize, $inventory->getSize()),
 			'hotbar' => self::sliceNumericKeyAssociatedArray($contents, 0, $hotbarSize - 1),
-			'holding' => [$inventory->getItemInHand()]
+			'holding' => []
 		];
+
+		if (isset($armorContents[ArmorInventory::SLOT_HEAD])) {
+			$result['helmet'][] = $armorContents[ArmorInventory::SLOT_HEAD];
+		}
+		if (isset($armorContents[ArmorInventory::SLOT_CHEST])) {
+			$result['chestplate'][] = $armorContents[ArmorInventory::SLOT_CHEST];
+		}
+		if (isset($armorContents[ArmorInventory::SLOT_LEGS])) {
+			$result['leggings'][] = $armorContents[ArmorInventory::SLOT_LEGS];
+		}
+		if (isset($armorContents[ArmorInventory::SLOT_FEET])) {
+			$result['boots'][] = $armorContents[ArmorInventory::SLOT_FEET];
+		}
+		if (isset($contents[$inventory->getHeldItemIndex()])) {
+			$result['holding'][] = $contents[$inventory->getHeldItemIndex()];
+		}
 
 		foreach ($this->variables as $name => $syntax) {
 			$syntax = explode(' ', $syntax);
@@ -139,11 +156,9 @@ class VariableParser {
 			$result[$name] = array_slice($variable, 0, $this->lengthLimits[$name] ?? null);
 		}
 
-		array_walk($result, function (array $items) {
+		array_walk($result, function (array &$items) {
 			$items = self::itemSetMapToItems(self::itemsToItemSetMap($items));
 			shuffle($items);
-
-			return $items;
 		});
 
 		return $result;
@@ -234,7 +249,7 @@ class VariableParser {
 			return [$anyContents[mt_rand(0, count($anyContents) - 1)]];
 		}
 
-		if ($magic[1] === 'item') {
+		if ($magic[1] === 'item' && $magic[2] !== 0) {
 			return [ItemFactory::get((int) $magic[2], (int) ($magic[3] ?? 0))];
 		}
 
@@ -251,5 +266,9 @@ class VariableParser {
 		}
 
 		return $sliced;
+	}
+
+	function isIntegerString(string $string): bool {
+		return $string === ((string) ((int) $string));
 	}
 }

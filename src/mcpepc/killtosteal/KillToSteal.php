@@ -8,6 +8,8 @@ use pocketmine\event\Listener;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\player\PlayerDeathEvent;
 use pocketmine\event\player\PlayerJoinEvent;
+use pocketmine\event\player\PlayerPreLoginEvent;
+use pocketmine\event\player\PlayerRespawnEvent;
 use pocketmine\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
@@ -21,6 +23,12 @@ class KillToSteal extends PluginBase implements Listener {
 	/** @var DeadPlayerHandler[] */
 	private $handlers = [];
 
+	/** @var array[] */
+	private $transferQueue = [];
+
+	/** @var BanManager */
+	private $banManager;
+
 	/** @var Config */
 	private $inventoryConfig;
 
@@ -31,6 +39,7 @@ class KillToSteal extends PluginBase implements Listener {
 		$this->saveDefaultConfig();
 		$this->saveResource('inventory.json');
 
+		$this->banManager = new BanManager(new Config($this->getDataFolder() . 'banlist.yml'));
 		$this->inventoryConfig = new Config($this->getDataFolder() . 'inventory.json');
 	}
 
@@ -38,6 +47,17 @@ class KillToSteal extends PluginBase implements Listener {
 		$this->variableParser = new VariableParser($this->inventoryConfig->get('variables'));
 
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
+	}
+
+	function onDisable(): void {
+		$this->banlistConfig->save();
+	}
+
+	function onPreLogin(PlayerPreLoginEvent $event): void {
+		if ($this->banManager->isBanned($event->getPlayer())) {
+			$event->setKickMessage($this->getConfig()->getNested('on-death.ban.reason'));
+			$event->setCancelled();
+		}
 	}
 
 	function onJoin(PlayerJoinEvent $event): void {
@@ -50,7 +70,7 @@ class KillToSteal extends PluginBase implements Listener {
 	}
 
 	/**
-		* @priority LOW
+	 * @priority LOW
 	 */
 	function onDamageByEntity(EntityDamageByEntityEvent $event): void {
 		$entity = $event->getEntity();
@@ -64,8 +84,8 @@ class KillToSteal extends PluginBase implements Listener {
 	}
 
 	/**
-		* @priority HIGHEST
-		* @ignoreCancelled
+	 * @priority HIGHEST
+	 * @ignoreCancelled
 	 */
 	function onDeath(PlayerDeathEvent $event): void {
 		$player = $event->getPlayer();
@@ -87,14 +107,35 @@ class KillToSteal extends PluginBase implements Listener {
 				continue;
 			}
 
+			if ($what === 'ban') {
+				$until = $how['time'] ?? null;
+
+				if (!is_int($until) || $until < 0) {
+					$until = null;
+				} else {
+					$until += time();
+				}
+
+				$this->banManager->ban($player, $until);
+			}
+
 			if ($what === 'transfer') {
-				$player->transfer($how['ip'], $how['port']);
+				$this->transferQueue[strtolower($player->getName())] = [$how['ip'], $how['port']]; // TODO: 밴 1시간, 직접 구현  및 리스폰시로 이동
 			}
 		}
 
 		$this->handlers[strtolower($player->getName())] = new DeadPlayerHandler($this, $player, $lastDamager);
 		$event->setDrops([]);
 		$event->setKeepInventory(false);
+	}
+
+	function onRespawn(PlayerRespawnEvent $event): void {
+		$player = $event->getPlayer();
+
+		if (isset($this->transferQueue[strtolower($player->getName())])) {
+			$transferData = $this->transferQueue[strtolower($player->getName())];
+			$player->transfer($transferData[0], $transferData[1]);
+		}
 	}
 
 	function getInventoryConfig(): Config {
