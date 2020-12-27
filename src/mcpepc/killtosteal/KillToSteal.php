@@ -2,10 +2,16 @@
 
 namespace mcpepc\killtosteal;
 
+use muqsit\invmenu\InvMenuHandler;
+use muqsit\invmenu\InvMenuTransaction;
+use muqsit\invmenu\InvMenuTransactionResult;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\event\Listener;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\inventory\ChestInventory;
+use pocketmine\inventory\transaction\action\SlotChangeAction;
+use pocketmine\event\inventory\InventoryTransactionEvent;
 use pocketmine\event\player\PlayerDeathEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerPreLoginEvent;
@@ -14,7 +20,9 @@ use pocketmine\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 use function count;
-use function usort;
+use function in_array;
+use function spl_object_hash;
+use function uasort;
 
 class KillToSteal extends PluginBase implements Listener {
 	/** @var string[] */
@@ -22,6 +30,9 @@ class KillToSteal extends PluginBase implements Listener {
 
 	/** @var DeadPlayerHandler[] */
 	private $handlers = [];
+
+	/** @var array[] */
+	private $stealData = [];
 
 	/** @var array[] */
 	private $transferQueue = [];
@@ -46,11 +57,9 @@ class KillToSteal extends PluginBase implements Listener {
 	function onEnable(): void {
 		$this->variableParser = new VariableParser($this->inventoryConfig->get('variables'));
 
-		$this->getServer()->getPluginManager()->registerEvents($this, $this);
-	}
+		InvMenuHandler::register($this);
 
-	function onDisable(): void {
-		$this->banlistConfig->save();
+		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 	}
 
 	function onPreLogin(PlayerPreLoginEvent $event): void {
@@ -69,17 +78,15 @@ class KillToSteal extends PluginBase implements Listener {
 		}
 	}
 
-	/**
-	 * @priority LOW
-	 */
+	/** @priority LOW */
 	function onDamageByEntity(EntityDamageByEntityEvent $event): void {
 		$entity = $event->getEntity();
 		$eid = $entity->getId();
 		$damager = $event->getDamager();
 
-		if (isset($this->clickIds[$eid]) && $damager instanceof Player && isset($this->handlers[$this->clickIds[$eid]]) && $entity instanceof Human) {
+		if (isset($this->handlers[$this->clickIds[$eid] ?? '']) && $damager instanceof Player && $entity instanceof Human) {
 			$event->setCancelled();
-			$this->handlers[$this->clickIds[$eid]]->showInventoryTo($damager);
+			$this->handlers[$this->clickIds[$eid]]->getMenu()->send($damager);
 		}
 	}
 
@@ -89,7 +96,6 @@ class KillToSteal extends PluginBase implements Listener {
 	 */
 	function onDeath(PlayerDeathEvent $event): void {
 		$player = $event->getPlayer();
-		$this->clickIds[Entity::$entityCount] = strtolower($player->getName());
 
 		$deathCause = $player->getLastDamageCause();
 		$lastDamager = null;
@@ -97,8 +103,13 @@ class KillToSteal extends PluginBase implements Listener {
 			$lastDamager = $deathCause->getDamager();
 		}
 
+		$handler = new DeadPlayerHandler($this, $player, $player->getLevelNonNull()->getEntity(Entity::$entityCount - 1), $lastDamager);
+		$this->handlers[$handler->getPlayerName()] = $handler;
+		$this->clickIds[Entity::$entityCount - 1] = $handler->getPlayerName();
+		$this->stealData[spl_object_hash($handler->getMenu()->getInventory())] = ['' => $handler->getPlayerName()];
+
 		$onDeath = $this->getConfig()->get('on-death');
-		usort($onDeath, function ($a, $b) {
+		uasort($onDeath, function ($a, $b): bool {
 			return $a['index'] === $b['index'] ? 0 : (($a['index'] < $b['index']) ? -1 : 1);
 		});
 
@@ -110,21 +121,20 @@ class KillToSteal extends PluginBase implements Listener {
 			if ($what === 'ban') {
 				$until = $how['time'] ?? null;
 
-				if (!is_int($until) || $until < 0) {
-					$until = null;
-				} else {
+				if (is_int($until) || $until >= 0) {
 					$until += time();
+				} else {
+					$until = null;
 				}
 
 				$this->banManager->ban($player, $until);
 			}
 
 			if ($what === 'transfer') {
-				$this->transferQueue[strtolower($player->getName())] = [$how['ip'], $how['port']]; // TODO: 밴 1시간, 직접 구현  및 리스폰시로 이동
+				$this->transferQueue[strtolower($player->getName())] = [$how['ip'], $how['port']];
 			}
 		}
 
-		$this->handlers[strtolower($player->getName())] = new DeadPlayerHandler($this, $player, $lastDamager);
 		$event->setDrops([]);
 		$event->setKeepInventory(false);
 	}
@@ -133,9 +143,19 @@ class KillToSteal extends PluginBase implements Listener {
 		$player = $event->getPlayer();
 
 		if (isset($this->transferQueue[strtolower($player->getName())])) {
-			$transferData = $this->transferQueue[strtolower($player->getName())];
-			$player->transfer($transferData[0], $transferData[1]);
+			$player->transfer(...$this->transferQueue[strtolower($player->getName())]);
 		}
+	}
+
+	function handleTransaction(InvMenuTransaction $transaction): InvMenuTransactionResult {
+		$action = $transaction->getAction();
+
+		$stealData = $this->stealData[spl_object_hash($action->getInventory())];
+		$handler = $this->handlers[$stealData['']];
+		$takeCount = $action->getSourceItem()->getCount() - ($action->getSourceItem()->equals($action->getTargetItem()) ? $action->getTargetItem()->getCount() : 0);
+		$transaction->getPlayer()->sendMessage('[InvMenu] 개수차 ' . $takeCount . ' ||슬롯 ' . $action->getSlot() . ' ||인벤토리 ' . $action->getInventory()->getName());
+
+		return $transaction->discard();
 	}
 
 	function getInventoryConfig(): Config {

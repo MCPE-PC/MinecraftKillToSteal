@@ -3,7 +3,6 @@ This document explains the structure of variables used in inventory
 ## Magic variables
  * `:item:id` refers an item by its id  (e. g. `item:0` refers an air)
  * `:item:id:meta` refers an item by its id and its meta (e. g. `item:0:0` refers an air)
- * `:random` refers a random item of all available items
 ## Declaring variables
  * Every variable is an unordered collection of items except air
  * Start the declaration of a variable by referring other variable: `"foo": "storage"` (Now `foo` equals to `storage`)

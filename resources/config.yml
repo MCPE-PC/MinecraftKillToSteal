@@ -8,11 +8,9 @@ item-list:
   whitelist: false # Blacklist will be ignored if you use whitelist.
   blacklist: []
 on-death:
-  ban: # TODO
+  ban:
     enable: true
     index: 1
-    ban: true
-    ip-ban: false
     reason: Death is illegal in this server
     time: -1 # It is the time of the ban represented in seconds. It won't automatically pardon the player if you set as non-numeric values or a negative number.
   transfer:

@@ -10,6 +10,7 @@ use function array_filter;
 use function array_merge;
 use function array_search;
 use function array_slice;
+use function array_value;
 use function array_walk;
 use function count;
 use function is_int;
@@ -24,7 +25,7 @@ use function substr;
 class VariableParser {
 	const RESERVED_NAMES = ['any', 'offhand', 'armor', 'helmet', 'chestplate', 'leggings', 'boots', 'storage', 'hotbar', 'holding'];
 
-	const MAGIC_NAME_REGEX = '/^:(item:-?[0-9]+(:[0-9]+)?|random)$/';
+	const MAGIC_NAME_REGEX = '/^:(item:-?[0-9]+(:[0-9]+)?)$/';
 	const NAME_REGEX = '/^[a-z0-9]+$/i';
 
 	protected $variables;
@@ -89,7 +90,7 @@ class VariableParser {
 		$offhandContents = $player->getCursorInventory()->getContents();
 
 		$result = [
-			'any' => array_merge($contents, $armorContents, $offhandContents),
+			'any' => array_merge(array_values($contents), $armorContents, $offhandContents),
 			'offhand' => $offhandContents,
 			'armor' => array_merge($armorContents, $offhandContents),
 			'helmet' => [],
@@ -245,10 +246,6 @@ class VariableParser {
 	static function parseMagicVariable(string $magic, array $anyContents): array {
 		$magic = explode(':', $magic);
 
-		if ($magic[1] === 'random') {
-			return [$anyContents[mt_rand(0, count($anyContents) - 1)]];
-		}
-
 		if ($magic[1] === 'item' && $magic[2] !== 0) {
 			return [ItemFactory::get((int) $magic[2], (int) ($magic[3] ?? 0))];
 		}
@@ -256,12 +253,16 @@ class VariableParser {
 		return [];
 	}
 
-	static function sliceNumericKeyAssociatedArray(array $array, int $ge, int $le): array {
+	static function sliceNumericKeyAssociatedArray(array $array, int $ge, int $le, bool $keepKey = false): array {
 		$sliced = [];
 
 		foreach ($array as $key => $value) {
 			if (is_int($key) && $key >= $ge && $key <= $le) {
-				$sliced[$key] = $value;
+				if ($keepKey) {
+					$sliced[$key] = $value;
+				} else {
+					$sliced[] = $value;
+				}
 			}
 		}
 

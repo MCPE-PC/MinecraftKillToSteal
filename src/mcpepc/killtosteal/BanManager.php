@@ -26,17 +26,23 @@ class BanManager {
 		} else if (time() > $until || $this->getBanData($player) > $until) {
 			return false;
 		}
+
+		$this->banlist->set(strtolower($player->getName()), $until);
+		$this->banlist->save();
+
+		return true;
 	}
 
 	function unban(Player $player): void {
 		$this->banlist->remove(strtolower($player->getName()));
+		$this->banlist->save();
 	}
 
 	function isBanned(Player $player): bool {
 		return $this->getBanData($player) === null ? false : true;
 	}
 
-	function getBanData(Player $player): ?int {
+	function getBanData(Player $player) {
 		$data = $this->banlist->get(strtolower($player->getName()), null);
 
 		if ($data === null || $data === false || (is_int($data) && time() > $data)) {

@@ -8,12 +8,16 @@
     "S": "any whitelist:268,272,267,276,283,743"
   },
   "stealable": ["h", "B", "I", "S"],
-  "inventory": [
-    "I",           "I",           "I",           "I",           "I",           "I",           "I",           "I",           "I",
-    ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10",
-    ":item:26",    ":item:26",    "helmet",      ":item:26",    ":item:26",    ":item:26",    ":item:26",    ":item:26",    ":item:26",
-    ":item:26",    "S",           "chestplate",  ":item:26",    ":item:26",    "h",           "h",           ":item:26",    ":item:26",
-    ":item:26",    ":item:26",    "leggings",    ":item:26",    ":item:26",    "h",           "h",           ":item:26",    ":item:26",
-    ":item:26",    ":item:26",    "boots",       ":item:26",    ":item:26",    ":item:26",    ":item:26",    ":item:26",    ":item:26"
-  ]
+  "inventory": {
+    "name": "Robbery",
+    "type": "invmenu:double_chest",
+    "contents": [
+     "I",           "I",           "I",           "I",           "I",           "I",           "I",           "I",           "I",
+      ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10", ":item:95:10",
+      ":item:26",    ":item:26",    "helmet",      ":item:26",    ":item:26",    ":item:26",    ":item:26",    ":item:26",    ":item:26",
+      ":item:26",    "S",           "chestplate",  ":item:26",    ":item:26",    "h",           "h",           ":item:26",    ":item:26",
+      ":item:26",    ":item:26",    "leggings",    ":item:26",    ":item:26",    "h",           "h",           ":item:26",    ":item:26",
+      ":item:26",    ":item:26",    "boots",       ":item:26",    ":item:26",    ":item:26",    ":item:26",    ":item:26",    ":item:26"
+    ]
+  }
 }

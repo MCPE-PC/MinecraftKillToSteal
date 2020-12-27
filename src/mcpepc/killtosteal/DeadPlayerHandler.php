@@ -2,8 +2,10 @@
 
 namespace mcpepc\killtosteal;
 
+use muqsit\invmenu\InvMenu;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
+use pocketmine\math\Vector3;
 use pocketmine\Player;
 
 class DeadPlayerHandler {
@@ -13,28 +15,30 @@ class DeadPlayerHandler {
 	/** @var string|null */
 	protected $killer;
 
-	/** @var StealInventory */
-	protected $inventory;
+	/** @var InvMenu */
+	protected $menu;
 
 	/** @var Item[] */
 	protected $retrievable = [];
 
-	protected $gaveBack = false;
-
-	function __construct(KillToSteal $plugin, Player $player, ?Player $lastDamager) {
+	function __construct(KillToSteal $plugin, Player $player, Vector3 $inventoryHolder, ?Player $lastDamager) {
 		$this->owner = strtolower($player->getName());
 
 		if ($lastDamager !== null) {
 			$this->killer = strtolower($lastDamager->getName());
 		}
 
-		$this->inventory = new StealInventory();
+		$menuConfig = $plugin->getInventoryConfig()->get('inventory');
+		$menu = $this->menu = InvMenu::create($menuConfig['type']);
+		$menu->setName($menuConfig['name']);
+		$menu->setListener([$plugin, 'handleTransaction']);
 
 		$variables = $plugin->getVariableParser()->applyToPlayer($player);
+		$stealableVariableNames = $plugin->getInventoryConfig()->get('stealable');
 		$retrievable = VariableParser::itemsToItemSetMap($player->getInventory()->getContents());
 		$stolen = [];
 
-		foreach (array_intersect_key($variables, array_flip($plugin->getInventoryConfig()->get('stealable'))) as $stolenItems) {
+		foreach (array_intersect_key($variables, array_flip($stealableVariableNames)) as $stolenItems) {
 			$stolen = array_merge($stolen, $stolenItems);
 		}
 
@@ -50,37 +54,37 @@ class DeadPlayerHandler {
 
 		$this->retrievable = VariableParser::itemSetMapToItems($retrievable);
 
+		$contents = [];
+
 		$slotEmpty = $plugin->getConfig()->get('empty-slot-item');
 		$slotEmpty = ItemFactory::get($slotEmpty['id'], $slotEmpty['meta'], $slotEmpty['count']);
 
-		foreach ($plugin->getInventoryConfig()->get('inventory') as $index => $name) {
+		foreach ($menuConfig['contents'] as $name) {
 			$item = $slotEmpty;
 
 			if (isset($variables[$name]) && count($variables[$name])) {
 				$item = array_shift($variables[$name]);
 			} else if (preg_match(VariableParser::MAGIC_NAME_REGEX, $name)) {
-				$item = VariableParser::parseMagicVariable($name, [])[0];
+				$item = VariableParser::parseMagicVariable($name, $variables['any'])[0];
 			}
 
-			$this->inventory->setItem($index, $item, false);
-		}
-	}
-
-	function showInventoryTo(Player $player): int {
-		return $player->addWindow($this->inventory);
-	}
-
-	function giveItemBack(Player $player, bool $force = false): bool {
-		if ($this->gaveBack) {
-			return false;
+			$contents[] = $item;
 		}
 
-		if ($force || strtolower($player->getName()) === $this->owner) {
-			$player->getInventory()->addItem($this->retrievable);
-			$this->gaveBack = true;
+		$menu->getInventory()->setContents($contents);
+	}
+
+	function giveItemBack(Player $player): bool {
+		if (strtolower($player->getName()) === $this->owner) {
+			$player->getInventory()->addItem(...$this->retrievable);
+			$this->retrievable = [];
 			return true;
 		}
 
 		return false;
+	}
+
+	function getMenu(): InvMenu {
+		return $this->menu;
 	}
 }
