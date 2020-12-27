@@ -31,7 +31,9 @@ class DeadPlayerHandler {
 		$menuConfig = $plugin->getInventoryConfig()->get('inventory');
 		$menu = $this->menu = InvMenu::create($menuConfig['type']);
 		$menu->setName($menuConfig['name']);
-		$menu->setListener([$plugin, 'handleTransaction']);
+		$menu->setListener(function ($transaction) use ($plugin) {
+			return $plugin->handleTransaction($transaction);
+		});
 
 		$variables = $plugin->getVariableParser()->applyToPlayer($player);
 		$stealableVariableNames = $plugin->getInventoryConfig()->get('stealable');

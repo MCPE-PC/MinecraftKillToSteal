@@ -150,7 +150,7 @@ class KillToSteal extends PluginBase implements Listener {
 	function handleTransaction(InvMenuTransaction $transaction): InvMenuTransactionResult {
 		$action = $transaction->getAction();
 
-		$stealData = $this->stealData[spl_object_hash($action->getInventory())];
+		$stealData = &$this->stealData[spl_object_hash($action->getInventory())];
 		$handler = $this->handlers[$stealData['']];
 		$takeCount = $action->getSourceItem()->getCount() - ($action->getSourceItem()->equals($action->getTargetItem()) ? $action->getTargetItem()->getCount() : 0);
 		$transaction->getPlayer()->sendMessage('[InvMenu] 개수차 ' . $takeCount . ' ||슬롯 ' . $action->getSlot() . ' ||인벤토리 ' . $action->getInventory()->getName());
