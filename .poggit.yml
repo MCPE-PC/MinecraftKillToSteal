@@ -6,6 +6,6 @@ projects:
   KillToSteal:
     path: ""
     libs:
-      src: Muqsit/InvMenu/InvMenu
+    - src: Muqsit/InvMenu/InvMenu
       version: ^4.1.0
 ...

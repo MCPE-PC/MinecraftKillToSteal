@@ -87,4 +87,8 @@ class DeadPlayerHandler {
 	function getMenu(): InvMenu {
 		return $this->menu;
 	}
+
+	function getLowerCasePlayerName(): string {
+		return $this->owner;
+	}
 }

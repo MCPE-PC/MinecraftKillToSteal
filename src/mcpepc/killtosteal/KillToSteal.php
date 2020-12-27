@@ -104,12 +104,12 @@ class KillToSteal extends PluginBase implements Listener {
 		}
 
 		$handler = new DeadPlayerHandler($this, $player, $player->getLevelNonNull()->getEntity(Entity::$entityCount - 1), $lastDamager);
-		$this->handlers[$handler->getPlayerName()] = $handler;
-		$this->clickIds[Entity::$entityCount - 1] = $handler->getPlayerName();
-		$this->stealData[spl_object_hash($handler->getMenu()->getInventory())] = ['' => $handler->getPlayerName()];
+		$this->handlers[$handler->getLowerCasePlayerName()] = $handler;
+		$this->clickIds[Entity::$entityCount - 1] = $handler->getLowerCasePlayerName();
+		$this->stealData[spl_object_hash($handler->getMenu()->getInventory())] = ['' => $handler->getLowerCasePlayerName()];
 
 		$onDeath = $this->getConfig()->get('on-death');
-		uasort($onDeath, function ($a, $b): bool {
+		uasort($onDeath, function ($a, $b): int {
 			return $a['index'] === $b['index'] ? 0 : (($a['index'] < $b['index']) ? -1 : 1);
 		});
 
