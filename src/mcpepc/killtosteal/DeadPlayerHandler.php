@@ -7,6 +7,7 @@ use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
 use pocketmine\math\Vector3;
 use pocketmine\Player;
+use function array_map;
 
 class DeadPlayerHandler {
 	/** @var string */
@@ -17,6 +18,9 @@ class DeadPlayerHandler {
 
 	/** @var InvMenu */
 	protected $menu;
+
+	/** @var int[] */
+	protected $capturedCounts;
 
 	/** @var Item[] */
 	protected $retrievable = [];
@@ -30,7 +34,7 @@ class DeadPlayerHandler {
 
 		$menuConfig = $plugin->getInventoryConfig()->get('inventory');
 		$menu = $this->menu = InvMenu::create($menuConfig['type']);
-		$menu->setName($menuConfig['name']);
+		$menu->setName(str_replace('@player@', $this->owner, $menuConfig['name']));
 		$menu->setListener(function ($transaction) use ($plugin) {
 			return $plugin->handleTransaction($transaction);
 		});
@@ -57,23 +61,35 @@ class DeadPlayerHandler {
 		$this->retrievable = VariableParser::itemSetMapToItems($retrievable);
 
 		$contents = [];
+		$counts = [];
 
 		$slotEmpty = $plugin->getConfig()->get('empty-slot-item');
 		$slotEmpty = ItemFactory::get($slotEmpty['id'], $slotEmpty['meta'], $slotEmpty['count']);
 
 		foreach ($menuConfig['contents'] as $name) {
 			$item = $slotEmpty;
+			$count = false;
 
 			if (isset($variables[$name]) && count($variables[$name])) {
 				$item = array_shift($variables[$name]);
+
+				if (in_array($name, $stealableVariableNames, true)) {
+					$count = $item->getCount();
+				}
 			} else if (preg_match(VariableParser::MAGIC_NAME_REGEX, $name)) {
 				$item = VariableParser::parseMagicVariable($name, $variables['any'])[0];
+
+				if (in_array($name, $stealableVariableNames, true)) {
+					$count = $item->getCount();
+				}
 			}
 
 			$contents[] = $item;
+			$counts[] = $count;
 		}
 
 		$menu->getInventory()->setContents($contents);
+		$this->capturedCounts = $counts;
 	}
 
 	function giveItemBack(Player $player): bool {
@@ -86,11 +102,19 @@ class DeadPlayerHandler {
 		return false;
 	}
 
+	function getLowerCasePlayerName(): string {
+		return $this->owner;
+	}
+
+	function getLowerCaseKillerName(): ?string {
+		return $this->killer;
+	}
+
 	function getMenu(): InvMenu {
 		return $this->menu;
 	}
 
-	function getLowerCasePlayerName(): string {
-		return $this->owner;
+	function getCapturedCounts(): array {
+		return $this->capturedCounts;
 	}
 }

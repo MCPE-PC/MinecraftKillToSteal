@@ -148,14 +148,25 @@ class KillToSteal extends PluginBase implements Listener {
 	}
 
 	function handleTransaction(InvMenuTransaction $transaction): InvMenuTransactionResult {
+		$continue = false;
+
 		$action = $transaction->getAction();
+		$playerName = strtolower($transaction->getPlayer()->getName());
 
 		$stealData = &$this->stealData[spl_object_hash($action->getInventory())];
 		$handler = $this->handlers[$stealData['']];
-		$takeCount = $action->getSourceItem()->getCount() - ($action->getSourceItem()->equals($action->getTargetItem()) ? $action->getTargetItem()->getCount() : 0);
-		$transaction->getPlayer()->sendMessage('[InvMenu] 개수차 ' . $takeCount . ' ||슬롯 ' . $action->getSlot() . ' ||인벤토리 ' . $action->getInventory()->getName());
+		$capturedCount = $handler->getCapturedCounts()[$action->getSlot()];
+		if ($capturedCount !== false) {
+			if ($handler->getLowerCaseKillerName() === $playerName) {
+				$continue = true;
+			} else if ($capturedCount * 0.5 >= ($stealData[$playerName] = $stealData[$playerName] ?? 0)
+				+ ($takeCount = $action->getSourceItem()->getCount() - ($action->getSourceItem()->equals($action->getTargetItem()) ? $action->getTargetItem()->getCount() : 0))) {
+				$stealData[$playerName] += $takeCount;
+				$continue = true;
+			}
+		}
 
-		return $transaction->discard();
+		return $continue ? $transaction->continue() : $transaction->discard();
 	}
 
 	function getInventoryConfig(): Config {
