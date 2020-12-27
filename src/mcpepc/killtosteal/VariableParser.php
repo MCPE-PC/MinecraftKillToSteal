@@ -10,7 +10,7 @@ use function array_filter;
 use function array_merge;
 use function array_search;
 use function array_slice;
-use function array_value;
+use function array_values;
 use function array_walk;
 use function count;
 use function is_int;

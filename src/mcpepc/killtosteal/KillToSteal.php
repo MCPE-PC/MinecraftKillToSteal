@@ -3,8 +3,8 @@
 namespace mcpepc\killtosteal;
 
 use muqsit\invmenu\InvMenuHandler;
-use muqsit\invmenu\InvMenuTransaction;
-use muqsit\invmenu\InvMenuTransactionResult;
+use muqsit\invmenu\transaction\InvMenuTransaction;
+use muqsit\invmenu\transaction\InvMenuTransactionResult;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\event\Listener;
@@ -103,7 +103,7 @@ class KillToSteal extends PluginBase implements Listener {
 			$lastDamager = $deathCause->getDamager();
 		}
 
-		$handler = new DeadPlayerHandler($this, $player, $player->getLevelNonNull()->getEntity(Entity::$entityCount - 1), $lastDamager);
+		$handler = new DeadPlayerHandler($this, $player, $lastDamager);
 		$this->handlers[$handler->getLowerCasePlayerName()] = $handler;
 		$this->clickIds[Entity::$entityCount - 1] = $handler->getLowerCasePlayerName();
 		$this->stealData[spl_object_hash($handler->getMenu()->getInventory())] = ['' => $handler->getLowerCasePlayerName()];

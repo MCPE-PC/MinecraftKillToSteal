@@ -21,7 +21,7 @@ class DeadPlayerHandler {
 	/** @var Item[] */
 	protected $retrievable = [];
 
-	function __construct(KillToSteal $plugin, Player $player, Vector3 $inventoryHolder, ?Player $lastDamager) {
+	function __construct(KillToSteal $plugin, Player $player, ?Player $lastDamager) {
 		$this->owner = strtolower($player->getName());
 
 		if ($lastDamager !== null) {
