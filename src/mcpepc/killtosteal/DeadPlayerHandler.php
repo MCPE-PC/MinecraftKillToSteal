@@ -3,13 +3,21 @@
 namespace mcpepc\killtosteal;
 
 use muqsit\invmenu\InvMenu;
+use muqsit\invmenu\transaction\DeterministicInvMenuTransaction;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
 use pocketmine\math\Vector3;
 use pocketmine\Player;
 use function array_map;
+use function count;
+use function shuffle;
 
 class DeadPlayerHandler {
+	private $closed = false;
+
+	/** @var KillToSteal */
+	private $plugin;
+
 	/** @var string */
 	protected $owner;
 
@@ -23,13 +31,15 @@ class DeadPlayerHandler {
 	protected $capturedCounts;
 
 	/** @var Item[] */
-	protected $retrievable = [];
+	protected $retrieveQueue = [];
 
 	function __construct(KillToSteal $plugin, Player $player, ?Player $lastDamager) {
-		$this->owner = strtolower($player->getName());
+		$this->plugin = $plugin;
+
+		$this->owner = $player->getLowerCaseName();
 
 		if ($lastDamager !== null) {
-			$this->killer = strtolower($lastDamager->getName());
+			$this->killer = $lastDamager->getLowerCaseName();
 		}
 
 		$menuConfig = $plugin->getInventoryConfig()->get('inventory');
@@ -58,7 +68,7 @@ class DeadPlayerHandler {
 			}
 		}
 
-		$this->retrievable = VariableParser::itemSetMapToItems($retrievable);
+		$this->retrieveQueue = VariableParser::itemSetMapToItems($retrievable);
 
 		$contents = [];
 		$counts = [];
@@ -92,14 +102,47 @@ class DeadPlayerHandler {
 		$this->capturedCounts = $counts;
 	}
 
-	function giveItemBack(Player $player): bool {
-		if (strtolower($player->getName()) === $this->owner) {
-			$player->getInventory()->addItem(...$this->retrievable);
-			$this->retrievable = [];
-			return true;
+	function giveItemBack(): bool {
+		$player = $this->plugin->getServer()->getPlayerExact($this->owner);
+		if ($player === null) {
+			return false;
 		}
 
-		return false;
+		$this->retrieveTo($player->getInventory());
+		return true;
+	}
+
+	function retrieveTo(Inventory $inventory): void {
+		shuffle($this->retrieveQueue);
+		$this->retrieveQueue = $inventory->addItem(...$this->retrieveQueue);
+	}
+
+	function prepareClose(): void {
+		$this->menu->getInventory()->removeAllViewers();
+		$this->menu->setListener(InvMenu::readonly(function (DeterministicInvMenuTransaction $transaction): void {
+			$player = $transaction->getPlayer();
+
+			$player->sendMessage('Access to the closed menu blocked');
+			$this->plugin->getLogger()->info('Tried to transact with closed menu by ' . $player->getName());
+		}));
+
+		$stealableVariableNames = $plugin->getInventoryConfig()->get('stealable');
+		foreach ($this->plugin->getInventoryConfig()->get('inventory.contents') as $slot => $variable) {
+			if (in_array($variable, $stealableVariableNames, true) && !($item = $this->menu->getInventory()->getItem($slot))->isNull()) {
+				$this->retrieveQueue[] = $item;
+			}
+		}
+
+		$this->giveItemBack();
+		$this->closed = true;
+	}
+
+	function isClosed(): bool {
+		return $this->closed && count($this->retrieveQueue) === 0;
+	}
+
+	function getPlugin(): KillToSteal {
+		return $this->plugin;
 	}
 
 	function getLowerCasePlayerName(): string {

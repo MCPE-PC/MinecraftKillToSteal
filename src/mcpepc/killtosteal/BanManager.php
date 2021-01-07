@@ -5,7 +5,6 @@ namespace mcpepc\killtosteal;
 use pocketmine\Player;
 use pocketmine\utils\Config;
 use function is_int;
-use function strtolower;
 use function time;
 
 class BanManager {
@@ -27,14 +26,14 @@ class BanManager {
 			return false;
 		}
 
-		$this->banlist->set(strtolower($player->getName()), $until);
+		$this->banlist->set($player->getLowerCaseName(), $until);
 		$this->banlist->save();
 
 		return true;
 	}
 
 	function unban(Player $player): void {
-		$this->banlist->remove(strtolower($player->getName()));
+		$this->banlist->remove($player->getLowerCaseName());
 		$this->banlist->save();
 	}
 
@@ -43,7 +42,7 @@ class BanManager {
 	}
 
 	function getBanData(Player $player) {
-		$data = $this->banlist->get(strtolower($player->getName()), null);
+		$data = $this->banlist->get($player->getLowerCaseName(), null);
 
 		if ($data === null || $data === false || (is_int($data) && time() > $data)) {
 			$this->unban($player);

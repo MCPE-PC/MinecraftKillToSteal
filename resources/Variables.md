@@ -1,8 +1,9 @@
 # Variables
 This document explains the structure of variables used in inventory
 ## Magic variables
- * `:item:id` refers an item by its id  (e. g. `item:0` refers an air)
- * `:item:id:meta` refers an item by its id and its meta (e. g. `item:0:0` refers an air)
+ * `:item:id` refers an item by its id  (e. g. `item:1` refers a stone)
+ * `:item:id:meta` refers an item by its id and its meta (e. g. `item:1:0` refers a stone)
+ * `:item:id:meta:count` refers an item by its id and its meta and its count(`1`) or refers items by their id and their meta and their count(greater than `1`) (e. g. `item:0:0:1` refers a stone)
 ## Declaring variables
  * Every variable is an unordered collection of items except air
  * Start the declaration of a variable by referring other variable: `"foo": "storage"` (Now `foo` equals to `storage`)

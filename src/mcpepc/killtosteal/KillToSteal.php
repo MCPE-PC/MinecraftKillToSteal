@@ -9,9 +9,6 @@ use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\event\Listener;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
-use pocketmine\inventory\ChestInventory;
-use pocketmine\inventory\transaction\action\SlotChangeAction;
-use pocketmine\event\inventory\InventoryTransactionEvent;
 use pocketmine\event\player\PlayerDeathEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerPreLoginEvent;
@@ -70,11 +67,8 @@ class KillToSteal extends PluginBase implements Listener {
 	}
 
 	function onJoin(PlayerJoinEvent $event): void {
-		$player = $event->getPlayer();
-		$playerName = strtolower($player->getName());
-
-		if (isset($this->handlers[$playerName]) && $this->handlers[$playerName]->giveItemBack($player)) {
-			unset($this->handlers[$playerName]);
+		if (($handler = $this->getHandler($event->getPlayer())) !== null) {
+			$handler->giveItemBack();
 		}
 	}
 
@@ -84,9 +78,9 @@ class KillToSteal extends PluginBase implements Listener {
 		$eid = $entity->getId();
 		$damager = $event->getDamager();
 
-		if (isset($this->handlers[$this->clickIds[$eid] ?? '']) && $damager instanceof Player && $entity instanceof Human) {
+		if (isset($this->clickIds[$eid]) && ($handler = $this->getHandler($this->clickIds[$eid])) !== null && $damager instanceof Player && $entity instanceof Human) {
 			$event->setCancelled();
-			$this->handlers[$this->clickIds[$eid]]->getMenu()->send($damager);
+			$handler->getMenu()->send($damager);
 		}
 	}
 
@@ -131,7 +125,7 @@ class KillToSteal extends PluginBase implements Listener {
 			}
 
 			if ($what === 'transfer') {
-				$this->transferQueue[strtolower($player->getName())] = [$how['ip'], $how['port']];
+				$this->transferQueue[$player->getLowerCaseName()] = [$how['ip'], $how['port']];
 			}
 		}
 
@@ -142,8 +136,13 @@ class KillToSteal extends PluginBase implements Listener {
 	function onRespawn(PlayerRespawnEvent $event): void {
 		$player = $event->getPlayer();
 
-		if (isset($this->transferQueue[strtolower($player->getName())])) {
-			$player->transfer(...$this->transferQueue[strtolower($player->getName())]);
+		if (isset($this->transferQueue[$player->getLowerCaseName()])) {
+			$player->transfer(...$this->transferQueue[$player->getLowerCaseName()]);
+			return;
+		}
+
+		if (($handler = $this->getHandler($event->getPlayer()->getLowerCaseName())) !== null) {
+			$handler->giveItemBack();
 		}
 	}
 
@@ -151,7 +150,7 @@ class KillToSteal extends PluginBase implements Listener {
 		$continue = false;
 
 		$action = $transaction->getAction();
-		$playerName = strtolower($transaction->getPlayer()->getName());
+		$playerName = $transaction->getPlayer()->getLowerCaseName();
 
 		$stealData = &$this->stealData[spl_object_hash($action->getInventory())];
 		$handler = $this->handlers[$stealData['']];
@@ -167,6 +166,29 @@ class KillToSteal extends PluginBase implements Listener {
 		}
 
 		return $continue ? $transaction->continue() : $transaction->discard();
+	}
+
+	function getHandler($player): ?DeadPlayerHandler {
+		if ($player instanceof Player) {
+			$player = $player->getLowerCaseName();
+		}
+
+		return $this->handlers[$player] ?? null;
+	}
+
+	function cleanupHandler(): int {
+		$count = 0;
+
+		foreach ($this->handlers as $playerName => $handler) {
+			if ($handler->isClosed()) {
+				unset($this->handlers[$playerName]);
+				unset($this->stealData[spl_object_hash($handler->getMenu()->getInventory())]);
+
+				$count += 1;
+			}
+		}
+
+		return $count;
 	}
 
 	function getInventoryConfig(): Config {
