@@ -4,6 +4,7 @@ namespace mcpepc\killtosteal;
 
 use muqsit\invmenu\InvMenu;
 use muqsit\invmenu\transaction\DeterministicInvMenuTransaction;
+use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
 use pocketmine\math\Vector3;
@@ -126,7 +127,7 @@ class DeadPlayerHandler {
 			$this->plugin->getLogger()->info('Tried to transact with closed menu by ' . $player->getName());
 		}));
 
-		$stealableVariableNames = $plugin->getInventoryConfig()->get('stealable');
+		$stealableVariableNames = $this->plugin->getInventoryConfig()->get('stealable');
 		foreach ($this->plugin->getInventoryConfig()->get('inventory.contents') as $slot => $variable) {
 			if (in_array($variable, $stealableVariableNames, true) && !($item = $this->menu->getInventory()->getItem($slot))->isNull()) {
 				$this->retrieveQueue[] = $item;
