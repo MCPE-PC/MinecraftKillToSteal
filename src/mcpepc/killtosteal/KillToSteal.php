@@ -78,7 +78,7 @@ class KillToSteal extends PluginBase implements Listener {
 				if ($command === null) {
 					$command = new PluginCommand($retrieve, $this);
 				} else {
-					$aliases = clone $command->getAliases();
+					$aliases = $command->getAliases();
 					$aliases[] = $retrieve;
 
 					$command->setAliases($aliases);
@@ -94,7 +94,7 @@ class KillToSteal extends PluginBase implements Listener {
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 	}
 
-	function onCommand(CommandSender $sender, Command $command, string $commandLabel, array $args) {
+	function onCommand(CommandSender $sender, Command $command, string $commandLabel, array $args): bool {
 		if ($command === $this->retrieveCommand && $sender instanceof Player) {
 			$sender->sendMessage('Trying to get your items back...');
 
@@ -103,6 +103,8 @@ class KillToSteal extends PluginBase implements Listener {
 				$sender->sendMessage('Done');
 			}
 		}
+
+		return true;
 	}
 
 	function onPreLogin(PlayerPreLoginEvent $event): void {
