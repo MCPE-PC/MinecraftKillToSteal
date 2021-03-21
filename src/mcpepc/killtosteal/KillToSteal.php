@@ -5,6 +5,9 @@ namespace mcpepc\killtosteal;
 use muqsit\invmenu\InvMenuHandler;
 use muqsit\invmenu\transaction\InvMenuTransaction;
 use muqsit\invmenu\transaction\InvMenuTransactionResult;
+use pocketmine\command\Command;
+use pocketmine\command\CommandSender;
+use pocketmine\command\PluginCommand;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\event\Listener;
@@ -43,6 +46,12 @@ class KillToSteal extends PluginBase implements Listener {
 	/** @var VariableParser */
 	private $variableParser;
 
+	/** @var bool */
+	private $retrieveOnJoin = false;
+
+	/** @var PluginCommand|null */
+	private $retrieveCommand;
+
 	function onLoad(): void {
 		$this->saveDefaultConfig();
 		$this->saveResource('inventory.json');
@@ -56,7 +65,44 @@ class KillToSteal extends PluginBase implements Listener {
 
 		InvMenuHandler::register($this);
 
+		$command = null;
+
+		foreach ($this->getConfig()->get('quick-returning', ['%rejoin']) as $retrieve) {
+			if (substr($retrieve, 0, 1) === '%') {
+				$retrieve = strtolower(substr($retrieve, 1));
+
+				if ($retrieve === 'rejoin') {
+					$this->retrieveOnJoin = true;
+				}
+			} else {
+				if ($command === null) {
+					$command = new PluginCommand($retrieve, $this);
+				} else {
+					$aliases = clone $command->getAliases();
+					$aliases[] = $retrieve;
+
+					$command->setAliases($aliases);
+				}
+			}
+		}
+
+		if ($command !== null) {
+			$this->retrieveCommand = $command;
+			$this->getServer()->getCommandMap()->register('killtosteal', $command);
+		}
+
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
+	}
+
+	function onCommand(CommandSender $sender, Command $command, string $commandLabel, array $args) {
+		if ($command === $this->retrieveCommand && $sender instanceof Player) {
+			$sender->sendMessage('Trying to get your items back...');
+
+			if (($handler = $this->getHandler($sender)) !== null) {
+				$handler->giveItemBack();
+				$sender->sendMessage('Done');
+			}
+		}
 	}
 
 	function onPreLogin(PlayerPreLoginEvent $event): void {
@@ -67,8 +113,10 @@ class KillToSteal extends PluginBase implements Listener {
 	}
 
 	function onJoin(PlayerJoinEvent $event): void {
-		if (($handler = $this->getHandler($event->getPlayer())) !== null) {
+		if ($this->retrieveOnJoin && ($handler = $this->getHandler($event->getPlayer())) !== null) {
+			$event->getPlayer()->sendMessage('Trying to get your items back...');
 			$handler->giveItemBack();
+			$event->getPlayer()->sendMessage('Done');
 		}
 	}
 
@@ -97,10 +145,12 @@ class KillToSteal extends PluginBase implements Listener {
 			$lastDamager = $deathCause->getDamager();
 		}
 
-		$handler = new DeadPlayerHandler($this, $player, $lastDamager);
-		$this->handlers[$handler->getLowerCasePlayerName()] = $handler;
-		$this->clickIds[Entity::$entityCount - 1] = $handler->getLowerCasePlayerName();
-		$this->stealData[spl_object_hash($handler->getMenu()->getInventory())] = ['' => $handler->getLowerCasePlayerName()];
+		if ($player->hasPermission('killtosteal.beingstolen')) {
+			$handler = new DeadPlayerHandler($this, $player, $lastDamager);
+			$this->handlers[$handler->getLowerCasePlayerName()] = $handler;
+			$this->clickIds[Entity::$entityCount - 1] = $handler->getLowerCasePlayerName();
+			$this->stealData[spl_object_hash($handler->getMenu()->getInventory())] = ['' => $handler->getLowerCasePlayerName()];
+		}
 
 		$onDeath = $this->getConfig()->get('on-death');
 		uasort($onDeath, function ($a, $b): int {
@@ -115,7 +165,7 @@ class KillToSteal extends PluginBase implements Listener {
 			if ($what === 'ban') {
 				$until = $how['time'] ?? null;
 
-				if (is_int($until) || $until >= 0) {
+				if (is_int($until) && $until >= 0) {
 					$until += time();
 				} else {
 					$until = null;
@@ -189,6 +239,10 @@ class KillToSteal extends PluginBase implements Listener {
 		}
 
 		return $count;
+	}
+
+	function getBanManager(): BanManager {
+		return $this->banManager;
 	}
 
 	function getInventoryConfig(): Config {

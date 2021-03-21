@@ -18,4 +18,7 @@ on-death:
     index: 0
     ip: 127.0.0.1
     port: 19132
+quick-returning:
+- '%rejoin'
+- retrieve
 ...

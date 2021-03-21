@@ -8,4 +8,15 @@ description: Wanna steal their items? Then kill them!
 depend:
 - PlayerDeathMotion
 author: MCPE_PC
+permissions:
+  killtosteal:
+    default: true
+    description: Allows opening inventory and being stolen
+    children:
+      killtosteal.openinventory:
+        default: true
+        description: Allows opening steal inventory # TODO
+      killtosteal.beingstolen:
+        default: true
+        description: Allows being stolen after death
 ...
